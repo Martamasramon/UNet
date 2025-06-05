@@ -1,13 +1,13 @@
 #$ -l tmem=64G,h_vmem=64G
 #$ -l gpu=true
-#$ -l h_rt=40:00:00
+#$ -l h_rt=20:00:00
 
 #$ -S /bin/bash
 #$ -j y
 #$ -V
 
 #$ -wd /cluster/project7/ProsRegNet_CellCount/UNet
-#$ -N Test_UNet
+#$ -N Train_T2W_UNet
 
 date
 nvidia-smi
@@ -20,6 +20,6 @@ source CriDiff_env/bin/activate
 export PATH="CriDiff_env/bin:$PATH"
 cd ../UNet
 
-python3 test.py --checkpoint 'checkpoints_0306_1947_stage_1_best'
+python3 train.py --stage_delay 1 --lr_factor 1
 
 date

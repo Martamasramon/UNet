@@ -9,7 +9,14 @@ Created on Wed Jan 20 19:56:57 2021
 import torchvision.models as models
 import torch
 import torch.nn as nn
+from torchvision.transforms import Normalize
 
+
+def transform_perceptual(img):
+    transform = Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    img = img.repeat(1, 3, 1, 1)
+    img = transform(img)
+    return img
 
 class VGGPerceptualLoss(torch.nn.Module):
     def __init__(self, resize=True,device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")):
@@ -30,6 +37,9 @@ class VGGPerceptualLoss(torch.nn.Module):
         self.resize = resize
 
     def forward(self, input, target):
+        input  = transform_perceptual(input)
+        target = transform_perceptual(target)
+        
         if input.shape[1] != 3:
             input = input.repeat(1, 3, 1, 1).to(self.device)
             target = target.repeat(1, 3, 1, 1).to(self.device)

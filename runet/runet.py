@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+import torch.nn.functional as F
 
 class InitialBlock(nn.Module):
     def __init__(self, input_size, output_size, kernel_size=7):
@@ -196,7 +196,7 @@ class RUNetDecoder(nn.Module):
         self.final = FinalBlock(32, 16, 1)    
 
     def forward(self, embed):
-        x = embedding_to_spatial(embed)
+        x = self.embedding_to_spatial(embed)
         x = x.view(embed.size(0), 512, self.initial_size, self.initial_size)  #[B, 512, 8, 8]
         
         # Process the spatial features

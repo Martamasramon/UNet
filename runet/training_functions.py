@@ -6,7 +6,6 @@ from torch.autograd import Variable
 from torchvision import utils
 from tqdm import tqdm
 from utils.formatter import format_best_checkpoint_name, format_current_checkpoint_name
-from torchvision.transforms import Normalize
 from piq import ssim
 
 def get_lr(optimizer):
@@ -19,6 +18,14 @@ def transform_perceptual(img):
     img = transform(img)
     return img
 
+def get_perceptual(λ_perceptual, epoch, percpt_scale):
+    warmup = 1/percpt_scale
+    if epoch < warmup:
+        return λ_perceptual * percpt_scale * epoch 
+    else:
+        return λ_perceptual
+    
+    
 # def show_imgs(images, titles=["Input", "Output", "Label"]):
 #     plt.figure(figsize=(20,20))
 #     for ind, img in enumerate(images):
@@ -27,9 +34,12 @@ def transform_perceptual(img):
 #         plt.title(titles[ind])
 #     plt.show()
 
-def train(model, optimizer, dataloader, pixel_fn, perceptual_fn, λ_pixel, λ_perceptual):
+def train(model, optimizer, dataloader, losses, λ_loss):
     model.train()
-    total_loss, pixel_total, perceptual_total, ssim_total = 0.0, 0.0, 0.0, 0.0
+    total_loss = 0.0
+    total_losses = {}
+    for l in losses:
+        total_losses[l] = 0.0
     
     for data in dataloader:
         # Get images
@@ -39,31 +49,33 @@ def train(model, optimizer, dataloader, pixel_fn, perceptual_fn, λ_pixel, λ_pe
         output = model(images)
         
         # Calculate loss
-        pixel_loss = pixel_fn(output, labels)
-        if perceptual_fn is not None:
-            perceptual_loss = perceptual_fn(transform_perceptual(output), transform_perceptual(labels))
-            loss = λ_pixel * pixel_loss + λ_perceptual * perceptual_loss
-        else: 
-            loss = pixel_loss
-        ssim_loss = ssim(output, labels, data_range=1.0)
+        loss      = 0
+        this_loss = {}
+        for l in losses:
+            this_loss[l] = losses[l](output, labels)
+            loss += this_loss[l] * λ_loss[l]
             
         loss.backward()
         optimizer.step()
         
         # Store losses
-        total_loss  += loss.item()
-        pixel_total += pixel_loss.item()
-        ssim_total  += ssim_loss.item()    
-        
-        if perceptual_fn is not None:
-            perceptual_total += perceptual_loss.item() 
-        
-    return total_loss / len(dataloader), pixel_total / len(dataloader), perceptual_total / len(dataloader), ssim_total / len(dataloader)
+        total_loss  += loss.item() 
+        for l in losses:
+            total_losses[l] += this_loss[l].item()
+    
+    total_loss /= len(dataloader)
+    for l in losses:
+        total_losses[l] /= len(dataloader)
+    
+    return total_loss, total_losses
 
-def evaluate(model, dataloader, pixel_fn, perceptual_fn, λ_pixel, λ_perceptual):
+def evaluate(model, dataloader, losses, λ_loss):
     model.eval()
-    total_loss, pixel_total, perceptual_total, ssim_total = 0.0, 0.0, 0.0, 0.0
-
+    total_loss = 0.0
+    total_losses = {}
+    for l in losses:
+        total_losses[l] = 0.0
+    
     with torch.no_grad():
         for data in dataloader:
             # Get images
@@ -71,26 +83,24 @@ def evaluate(model, dataloader, pixel_fn, perceptual_fn, λ_pixel, λ_perceptual
             output = model(images)
 
             # Calculate loss
-            pixel_loss = pixel_fn(output, labels)
-            if perceptual_fn is not None:
-                perceptual_loss = perceptual_fn(transform_perceptual(output), transform_perceptual(labels))
-                loss = λ_pixel * pixel_loss + λ_perceptual * perceptual_loss
-            else: 
-                loss = pixel_loss   
-            ssim_loss = ssim(output, labels, data_range=1.0)
+            loss      = 0
+            this_loss = {}
+            for l in losses:
+                this_loss[l] = losses[l](output, labels)
+                loss += this_loss[l] * λ_loss[l]
 
             # Store losses
-            total_loss       += loss.item()
-            pixel_total      += pixel_loss.item()
-            ssim_total       += ssim_loss.item()      
+            total_loss  += loss.item() 
+            for l in losses:
+                total_losses[l] += this_loss[l].item()    
 
-            if perceptual_fn is not None:
-                perceptual_total += perceptual_loss.item()
+    total_loss /= len(dataloader)
+    for l in losses:
+        total_losses[l] /= len(dataloader)
+    
+    return total_loss, total_losses
 
-    return total_loss / len(dataloader), pixel_total / len(dataloader), perceptual_total / len(dataloader), ssim_total / len(dataloader)
-
-
-def train_evaluate(model, train_dataloader, test_dataloader, optimizer, scheduler, n_epochs, name, pixel_fn, perceptual_fn=None, λ_pixel=None, λ_perceptual=None):
+def train_evaluate(model, train_dataloader, test_dataloader, optimizer, scheduler, n_epochs, name, losses, λ_loss):
     best_loss = np.inf
     
     for epoch in range(n_epochs):
@@ -98,19 +108,25 @@ def train_evaluate(model, train_dataloader, test_dataloader, optimizer, schedule
         print('Learning rate :', get_lr(optimizer))
         
         ###### Training ######
-        avg_total, avg_pixel, avg_perceptual, val_ssim  = train(model, optimizer, train_dataloader, pixel_fn, perceptual_fn, λ_pixel, λ_perceptual)
-        print(f"Training Loss: {avg_total:.4f} (Pixel: {avg_pixel:.4f}, Perceptual: {avg_perceptual:.4f}) - SSIM: {val_ssim:.4f}.")
+        train_total, train_all = train(model, optimizer, train_dataloader, losses, λ_loss)
+        output = f"Training Loss: {train_total:.4f}. "
+        for loss in train_all:
+            output += f"{loss}: {train_all[loss]:.4f}, "
+        print(output)
 
         ###### Evaluation ######
-        val_loss, val_pixel, val_perceptual, val_ssim = evaluate(model, test_dataloader, pixel_fn, perceptual_fn, λ_pixel, λ_perceptual)
-        print(f"Validation Loss: {val_loss:.4f} (Pixel: {val_pixel:.4f}, Perceptual: {val_perceptual:.4f}) - SSIM: {val_ssim:.4f}.")
+        val_total, val_all = evaluate(model, test_dataloader, losses, λ_loss)
+        output = f"Validation Loss: {val_total:.4f}. "
+        for loss in val_all:
+            output += f"{loss}: {val_all[loss]:.4f}, "
+        print(output)
 
-        if val_loss < best_loss:
-            best_loss = val_loss
+        if val_total < best_loss:
+            best_loss = val_total
             torch.save(model.state_dict(), name + '_best.pth')
             print('Best model saved at', name + '_best.pth')
 
         torch.save(model.state_dict(), name + '_current.pth')
-        scheduler.step(val_loss)
+        scheduler.step(val_total)
         
     return model
