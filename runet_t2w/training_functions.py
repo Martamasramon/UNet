@@ -1,12 +1,17 @@
 import os
 import numpy as np
-# import matplotlib.pyplot as plt
 import torch
 from torch.autograd import Variable
-from torchvision import utils
-from tqdm import tqdm
-from utils.formatter import format_best_checkpoint_name, format_current_checkpoint_name
-from piq import ssim
+from torchvision    import utils
+from datetime       import datetime
+from tqdm           import tqdm
+from piq            import ssim
+
+CHECKPOINTS_FOLDER = '/cluster/project7/ProsRegNet_CellCount/UNet/checkpoints/'
+def get_checkpoint_name():
+    now = datetime.now()
+    checkpoint_file = CHECKPOINTS_FOLDER + f'checkpoints_{now.strftime("%d%m")}_{now.strftime("%H%M")}'
+    return checkpoint_file
 
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:
@@ -17,22 +22,7 @@ def transform_perceptual(img):
     img = img.repeat(1, 3, 1, 1)
     img = transform(img)
     return img
-
-def get_perceptual(λ_perceptual, epoch, percpt_scale):
-    warmup = 1/percpt_scale
-    if epoch < warmup:
-        return λ_perceptual * percpt_scale * epoch 
-    else:
-        return λ_perceptual
     
-    
-# def show_imgs(images, titles=["Input", "Output", "Label"]):
-#     plt.figure(figsize=(20,20))
-#     for ind, img in enumerate(images):
-#         plt.subplot(1, len(images), ind+1)
-#         plt.imshow(utils.make_grid(images[ind]).cpu().numpy().transpose((1,2,0)))
-#         plt.title(titles[ind])
-#     plt.show()
 
 def train(model, optimizer, dataloader, losses, λ_loss):
     model.train()

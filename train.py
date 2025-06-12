@@ -5,15 +5,9 @@ from torch.utils.data           import DataLoader
 from torch.optim.lr_scheduler   import ReduceLROnPlateau
 
 from dataset.dataset    import MyDataset
-from dataset.transforms import create_transforms
-from loss               import VGGPerceptualLoss
-from runet.runetv2      import RUNet
-from runet.training_functions import train_evaluate
-from utils.formatter    import get_checkpoint_name
-from pytorch_msssim     import ssim
-
-def ssim_loss(pred, target):
-    return 1 - ssim(pred, target, data_range=1, size_average=True)
+from loss               import VGGPerceptualLoss, ssim_loss
+from runet_t2w.runetv2      import RUNet
+from runet_t2w.training_functions import train_evaluate, get_checkpoint_name
 
 import argparse
 parser = argparse.ArgumentParser()
@@ -38,6 +32,9 @@ parser.add_argument('--lr_factor',      type=float,  default=0.1)
 
 parser.add_argument('--load_checkpoint',type=str,  default=None)
 parser.add_argument('--img_folder',     type=str,  default='/cluster/project7/backup_masramon/IQT/PICAI/T2W/')
+parser.add_argument('--is_pretrain',    action='store_true')
+parser.add_argument('--finetune',       dest='is_pretrain', action='store_false')
+parser.set_defaults(is_pretrain=True)
 
 args, unparsed = parser.parse_known_args()
 print('\n',args)
@@ -49,9 +46,8 @@ model = model.cuda()
 
 # Create dataset & dataloader
 print('Creating datasets...')
-train_transforms, test_transforms = create_transforms(args.img_size)
-train_dataset   = MyDataset(args.img_folder, train_transforms, is_pretrain=True, is_train=True)
-test_dataset    = MyDataset(args.img_folder, test_transforms,  is_pretrain=True, is_train=False)
+train_dataset   = MyDataset(args.img_folder, img_size=args.img_size, is_pretrain=True, is_train=True)
+test_dataset    = MyDataset(args.img_folder, img_size=args.img_size, is_pretrain=True, is_train=False)
 
 train_dataloader  = DataLoader(train_dataset, batch_size=args.train_bs, shuffle=True,  num_workers=8)
 test_dataloader   = DataLoader(test_dataset,  batch_size=args.test_bs,  shuffle=False, num_workers=0)

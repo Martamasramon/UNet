@@ -9,7 +9,7 @@ from common.loss import SSIM, PSNR, VGGPerceptualLoss
 from common.transforms import create_transforms
 from common.dataset import SatelliteDataset
 from common.constants import DATA_ROOT
-from runet.runet import RUNet
+from runet_t2w.runet import RUNet
 
 
 class RUNetEvaluation:

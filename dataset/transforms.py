@@ -50,17 +50,19 @@ class RandomHorFlip(object):
       sample['label'] = np.fliplr(sample['label']).copy()
     return sample
 
-
-def create_transforms(img_size=128):
-  train_transforms = transforms.Compose([
+def get_train_transform(img_size=64, scale_factor=2, same_size_input_label=True):
+  transform = transforms.Compose([
       CenterCrop(img_size),
       RandomHorFlip(),
       ToTensor(),
   ])
-  test_transforms = transforms.Compose([
+  return transform
+
+def get_test_transform(img_size=64, scale_factor=2, same_size_input_label=True):
+  transform = transforms.Compose([
       CenterCrop(img_size),
       ToTensor(),
   ])
-  return train_transforms, test_transforms
+  return transform
 
   

@@ -191,5 +191,26 @@ class RUNet(nn.Module):
         x5 = self.block5(self.max_pool(x4))
 
         embedding = self.representation_transform(x5)
+
+        return 
+    
+    def get_all_embeddings(self, x):
         
-        return embedding
+        x1 = self.block1(x)
+        x2 = self.block2(self.max_pool(x1))
+        x3 = self.block3(self.max_pool(x2))
+        x4 = self.block4(self.max_pool(x3))
+        x5 = self.block5(self.max_pool(x4))
+
+        embedding = self.representation_transform(x5)
+
+        return x2, x3, x4, embedding
+    
+    #### 
+    # torch.Size([1, 1, 128, 128]) 
+    # torch.Size([1, 64, 128, 128]) 
+    # torch.Size([1, 128, 64, 64]) 
+    # torch.Size([1, 256, 32, 32]) 
+    # torch.Size([1, 512, 16, 16]) 
+    # torch.Size([1, 512, 8, 8]) 
+    # torch.Size([1, 512, 8, 8])
