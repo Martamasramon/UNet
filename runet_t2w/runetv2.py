@@ -105,7 +105,7 @@ class FinalBlock(nn.Module):
 
 
 class RUNet(nn.Module):
-    def __init__(self, drop_first, drop_last):
+    def __init__(self, drop_first, drop_last, img_size):
         super(RUNet, self).__init__()
         drop_2 = drop_first
         drop_3 = drop_first + (drop_last - drop_first) / 3
@@ -114,6 +114,8 @@ class RUNet(nn.Module):
 
         if drop_first == 0.0:
             drop_2 = drop_3 = drop_4 = 0.0
+            
+        self.img_size = img_size
 
         self.block1 = InitialBlock(1, 64)
 
@@ -169,11 +171,14 @@ class RUNet(nn.Module):
         x2 = self.block2(self.max_pool(x1))
         x3 = self.block3(self.max_pool(x2))
         x4 = self.block4(self.max_pool(x3))
-        x5 = self.block5(self.max_pool(x4))
-
-        embedding = self.representation_transform(x5)
-
-        out4 = self.refine4(embedding)
+        
+        if self.img_size == 128:
+            x5    = self.block5(self.max_pool(x4))
+            embed = self.representation_transform(x5)
+            out4  = self.refine4(embed)
+        else:
+            out4  = self.representation_transform(x4)        
+        
         out3 = self.refine3(out4)
         out2 = self.refine2(out3)
         out1 = self.refine1(out2)
@@ -188,11 +193,15 @@ class RUNet(nn.Module):
         x2 = self.block2(self.max_pool(x1))
         x3 = self.block3(self.max_pool(x2))
         x4 = self.block4(self.max_pool(x3))
-        x5 = self.block5(self.max_pool(x4))
+        
+        if self.img_size == 128:
+            x5    = self.block5(self.max_pool(x4))
+            embed = self.representation_transform(x5)
+            out4  = self.refine4(embed)
+        else:
+            embed = self.representation_transform(x4)
 
-        embedding = self.representation_transform(x5)
-
-        return 
+        return embedding
     
     def get_all_embeddings(self, x):
         
@@ -200,11 +209,11 @@ class RUNet(nn.Module):
         x2 = self.block2(self.max_pool(x1))
         x3 = self.block3(self.max_pool(x2))
         x4 = self.block4(self.max_pool(x3))
-        x5 = self.block5(self.max_pool(x4))
-
-        embedding = self.representation_transform(x5)
-
-        return x2, x3, x4, embedding
+        
+        if self.img_size == 128:
+            return x1, x2, x3, x4
+        else:
+            return x, x1, x2, x3
     
     #### 
     # torch.Size([1, 1, 128, 128]) 
@@ -213,4 +222,4 @@ class RUNet(nn.Module):
     # torch.Size([1, 256, 32, 32]) 
     # torch.Size([1, 512, 16, 16]) 
     # torch.Size([1, 512, 8, 8]) 
-    # torch.Size([1, 512, 8, 8])
+    # torch.Size([1, 512, 4, 4])
