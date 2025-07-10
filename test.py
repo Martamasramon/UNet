@@ -12,10 +12,10 @@ from runet_t2w.training_functions import CHECKPOINTS_FOLDER
 folder = '/cluster/project7/backup_masramon/IQT/'
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--img_size',     type=int,  default=64)
+parser.add_argument('--img_size',     type=int,  default=128)
 parser.add_argument('--drop_first',   type=float,default=0.1)
 parser.add_argument('--drop_last',    type=float,default=0.5)
-parser.add_argument('--batch_size',   type=int,  default=5)
+parser.add_argument('--batch_size',   type=int,  default=15)
 # Load checkpoint
 parser.add_argument('--checkpoint',   type=str,  default='checkpoints_0306_1947_stage_1_best')
 # Dataset
@@ -46,6 +46,7 @@ model   = RUNet(args.drop_first, args.drop_last, args.img_size).to(device)
 model.load_state_dict(torch.load(f"{CHECKPOINTS_FOLDER}{args.checkpoint}.pth"))
 
 save_name = args.checkpoint+'_HistoMRI' if args.finetune else args.checkpoint+'_PICAI' 
+save_name = save_name+'_mask' if args.use_mask else save_name
 visualize_results(model, dataset, device, save_name, batch_size=args.batch_size)
 
 # EVALUATE

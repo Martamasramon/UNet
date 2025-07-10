@@ -33,7 +33,7 @@ def train(model, optimizer, dataloader, losses, λ_loss):
     
     for data in dataloader:
         # Get images
-        images, labels = data["image"].float().cuda(), data["label"].float().cuda()
+        images = data.float().cuda()
 
         optimizer.zero_grad()
         output = model(images)
@@ -42,7 +42,7 @@ def train(model, optimizer, dataloader, losses, λ_loss):
         loss      = 0
         this_loss = {}
         for l in losses:
-            this_loss[l] = losses[l](output, labels)
+            this_loss[l] = losses[l](output, images)
             loss += this_loss[l] * λ_loss[l]
             
         loss.backward()
@@ -69,14 +69,14 @@ def evaluate(model, dataloader, losses, λ_loss):
     with torch.no_grad():
         for data in dataloader:
             # Get images
-            images, labels = data["image"].float().cuda(), data["label"].float().cuda()
+            images = data.float().cuda()
             output = model(images)
 
             # Calculate loss
             loss      = 0
             this_loss = {}
             for l in losses:
-                this_loss[l] = losses[l](output, labels)
+                this_loss[l] = losses[l](output, images)
                 loss += this_loss[l] * λ_loss[l]
 
             # Store losses

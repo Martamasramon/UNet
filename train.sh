@@ -20,6 +20,6 @@ source CriDiff_env/bin/activate
 export PATH="CriDiff_env/bin:$PATH"
 cd ../UNet
 
-python3 train.py --img_size 64 
+python3 train.py --img_size=64 --save_as=default_64
 
 date

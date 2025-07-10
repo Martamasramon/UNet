@@ -201,7 +201,7 @@ class RUNet(nn.Module):
         else:
             embed = self.representation_transform(x4)
 
-        return embedding
+        return embed
     
     def get_all_embeddings(self, x):
         
