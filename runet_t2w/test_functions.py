@@ -15,7 +15,7 @@ def compute_metrics(pred, gt):
     ssim = ssim_metric(gt_np, pred_np, data_range=1.0)
     return mse, psnr, ssim
 
-def evaluate_results(model, dataloader, device, batch_size):
+def evaluate_results(model, dataloader, device):
     mse_list, psnr_list, ssim_list = [], [], []
     for batch in dataloader:
         imgs = batch.to(device)
@@ -28,6 +28,7 @@ def evaluate_results(model, dataloader, device, batch_size):
             mse_list.append(mse)
             psnr_list.append(psnr)
             ssim_list.append(ssim)
+        return
 
     print(f'Average MSE:  {np.mean(mse_list):.6f}')
     print(f'Average PSNR: {np.mean(psnr_list):.2f}')

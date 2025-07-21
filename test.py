@@ -3,7 +3,7 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 
-from dataset                    import MyDataset
+from dataset.dataset            import MyDataset
 from torch.utils.data           import DataLoader
 from runet_t2w.runetv2          import RUNet
 from runet_t2w.test_functions   import visualize_results, evaluate_results
@@ -25,30 +25,41 @@ parser.set_defaults(finetune=False)
 parser.set_defaults(use_mask=False) 
 
 args, unparsed = parser.parse_known_args()
-print('\n',args)
 
-# Set device
-device  = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Create dataset
-data_folder = 'HistoMRI' if args.finetune else 'PICAI'
-dataset = MyDataset(
-    folder + data_folder, 
-    img_size    = args.img_size, 
-    is_finetune = args.finetune, 
-    is_train    = False,
-    use_mask    = args.use_mask
-)
+def main():
+    # Set device
+    device  = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Load model
-print(f"Loading RUNet weights from {args.checkpoint}")
-model   = RUNet(args.drop_first, args.drop_last, args.img_size).to(device)
-model.load_state_dict(torch.load(f"{CHECKPOINTS_FOLDER}{args.checkpoint}.pth"))
+    # Create dataset
+    data_folder = 'HistoMRI' if args.finetune else 'PICAI'
+    dataset = MyDataset(
+        folder + data_folder, 
+        img_size    = args.img_size, 
+        is_finetune = args.finetune, 
+        is_train    = False,
+        use_mask    = args.use_mask
+    )
 
-save_name = args.checkpoint+'_HistoMRI' if args.finetune else args.checkpoint+'_PICAI' 
-save_name = save_name+'_mask' if args.use_mask else save_name
-visualize_results(model, dataset, device, save_name, batch_size=args.batch_size)
+    # Load model
+    print(f"Loading RUNet weights from {args.checkpoint}")
+    model   = RUNet(args.drop_first, args.drop_last, args.img_size).to(device)
+    model.load_state_dict(torch.load(f"{CHECKPOINTS_FOLDER}{args.checkpoint}.pth"))
 
-# EVALUATE
-dataloader = DataLoader(dataset,  batch_size=args.batch_size,  shuffle=False)
-evaluate_results(model, dataloader, device, args.batch_size)
+    save_name = args.checkpoint+'_HistoMRI' if args.finetune else args.checkpoint+'_PICAI' 
+    save_name = save_name+'_mask' if args.use_mask else save_name
+    visualize_results(model, dataset, device, save_name, batch_size=args.batch_size)
+
+    # EVALUATE
+    dataloader = DataLoader(dataset,  batch_size=args.batch_size,  shuffle=False)
+    evaluate_results(model, dataloader, device)
+    
+    print('done all')
+
+if __name__ == '__main__':
+    print('Parameters:')
+    for key, value in vars(args).items():
+        print(f'- {key}: {value}')
+    print('')
+    
+    main()

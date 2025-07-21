@@ -13,6 +13,12 @@ def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
     
+def transform_perceptual(img):
+    transform = Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    img = img.repeat(1, 3, 1, 1)
+    img = transform(img)
+    return img
+    
 def train(model, device, optimizer, dataloader, losses, λ_loss):
     model.train()
     total_loss = 0.0
@@ -20,7 +26,7 @@ def train(model, device, optimizer, dataloader, losses, λ_loss):
     for l in losses:
         total_losses[l] = 0.0
     
-    for data in dataloader:
+    for i, data in enumerate(dataloader):
         optimizer.zero_grad()
         images = data.to(device)
         output = model(images)
@@ -98,12 +104,12 @@ def train_evaluate(model, device, train_dataloader, test_dataloader, optimizer, 
             output += f"{loss}: {val_all[loss]:.4f}, "
         print(output)
 
-        if val_total < best_loss:
-            best_loss = val_total
-            torch.save(model.state_dict(), CHECKPOINTS_FOLDER + name + '_best.pth')
-            print('Best model saved at', CHECKPOINTS_FOLDER + name + '_best.pth')
+        # if val_total < best_loss:
+        #     best_loss = val_total
+        #     torch.save(model.state_dict(), CHECKPOINTS_FOLDER + name + '_best.pth')
+        #     print('Best model saved at', CHECKPOINTS_FOLDER + name + '_best.pth')
 
-        torch.save(model.state_dict(), CHECKPOINTS_FOLDER + name + '_current.pth')
-        scheduler.step(val_total)
+        # torch.save(model.state_dict(), CHECKPOINTS_FOLDER + name + '_current.pth')
+        # scheduler.step(val_total)
         
     return model

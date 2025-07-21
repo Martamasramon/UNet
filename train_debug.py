@@ -1,37 +1,38 @@
-print('start training here')
+print('In script')
+      
+import torch.optim as optim
 import torch
 from torch.nn                   import L1Loss
 from torch.utils.data           import DataLoader
 from torch.optim.lr_scheduler   import ReduceLROnPlateau
-import torch.optim              as optim
+import argparse
 
 from dataset.dataset            import MyDataset
-from loss                       import VGGPerceptualLoss, ssim_loss
-
+# from loss                       import VGGPerceptualLoss, ssim_loss
 from runet_t2w.runetv2          import RUNet
-from runet_t2w.training_functions import train_evaluate, get_checkpoint_name, CHECKPOINTS_FOLDER
+from runet_t2w.training_functions_debug import train_evaluate, get_checkpoint_name, CHECKPOINTS_FOLDER
+
 
 folder = '/cluster/project7/backup_masramon/IQT/'
 
-import argparse
 parser = argparse.ArgumentParser()
 # UNet
-parser.add_argument('--img_size',       type=int,  default=64)
-parser.add_argument('--train_bs',       type=int,  default=16)
+parser.add_argument('--img_size',       type=int,  default=128)
+parser.add_argument('--train_bs',       type=int,  default=8)
 parser.add_argument('--test_bs',        type=int,  default=1)
 parser.add_argument('--drop_first',     type=float,default=0.1)
 parser.add_argument('--drop_last',      type=float,default=0.5)
-# Training 1
-parser.add_argument('--n_epochs_1',     type=int,   default=300)
+# Training
+parser.add_argument('--n_epochs',       type=int,   default=500)
 parser.add_argument('--lr',             type=float, default=1e-4)
 parser.add_argument('--factor',         type=float, default=0.5)
 parser.add_argument('--patience',       type=int,   default=3)
 parser.add_argument('--cooldown',       type=int,   default=1)
-# Training 2
-parser.add_argument('--n_epochs_2',     type=int,   default=200)
+# Loss
 parser.add_argument('--λ_pixel',        type=float, default=10.0)
 parser.add_argument('--λ_perct',        type=float, default=0.)
 parser.add_argument('--λ_ssim',         type=float, default=1.0)
+parser.add_argument('--stage_delay',    type=int,   default=300)
 parser.add_argument('--lr_factor',      type=float, default=0.1)
 # Checkpoint
 parser.add_argument('--checkpoint',     type=str,   default=None)
@@ -56,27 +57,27 @@ def main():
     # Create dataset & dataloader
     print('Creating datasets...')
     data_folder = 'HistoMRI' if args.finetune else 'PICAI'
-    
     train_dataset = MyDataset(
         folder + data_folder, 
-        data_type   = 'train',
         img_size    = args.img_size, 
         is_finetune = args.finetune, 
+        is_train    = True,
         use_mask    = args.use_mask
     )
     test_dataset = MyDataset(
         folder + data_folder, 
-        data_type   = 'train',
         img_size    = args.img_size, 
         is_finetune = args.finetune, 
+        is_train    = False,
         use_mask    = args.use_mask
     )
 
-    train_dataloader  = DataLoader(train_dataset, batch_size=args.train_bs, shuffle=True,  num_workers=8)
+    train_dataloader  = DataLoader(train_dataset, batch_size=args.train_bs, shuffle=True,  num_workers=0 )
     test_dataloader   = DataLoader(test_dataset,  batch_size=args.test_bs,  shuffle=False, num_workers=0)
 
     print('Starting training...')
     losses = {'Pixel': L1Loss(), 'Perceptual': VGGPerceptualLoss(), 'SSIM': ssim_loss}
+    losses = {'Pixel': L1Loss(), 'Perceptual': None, 'SSIM': None}
 
     if args.checkpoint is None:
         # 1. Train only with pixel loss
@@ -85,36 +86,15 @@ def main():
 
         checkpoint = args.save_as if args.save_as is not None else get_checkpoint_name()
         optimizer  = optim.Adam(model.parameters(), lr=args.lr)
-        scheduler  = ReduceLROnPlateau(
-            optimizer, 
-            'min', 
-            factor   = args.factor, 
-            patience = args.patience, 
-            cooldown = args.cooldown, 
-            min_lr   = 1e-7)
+        scheduler  = ReduceLROnPlateau(optimizer, 'min', factor=args.factor, patience=args.patience, cooldown=args.cooldown, min_lr=1e-7)
         
-        train_evaluate(model, device, train_dataloader, test_dataloader, optimizer, scheduler, args.n_epochs_1, checkpoint+'_stage_1', losses, λ_loss)
+        print('before')
+        train_evaluate(model, device, train_dataloader, test_dataloader, optimizer, scheduler, args.stage_delay, checkpoint+'_stage_1', losses, λ_loss)
     else:
         checkpoint = args.save_as if args.save_as is not None else args.checkpoint
 
-    # 2. Add other losses
-    print('\n2. Train with multiple losses...')
-    λ_loss = {'Pixel': args.λ_pixel, 'Perceptual': args.λ_perct, 'SSIM': args.λ_ssim }
-    print(λ_loss)
 
-    print('Loading best weights from stage 1...')
-    model.load_state_dict(torch.load(f'{CHECKPOINTS_FOLDER}{checkpoint}_stage_1_best.pth'))
-
-    optimizer = optim.Adam(model.parameters(), lr=args.lr*args.lr_factor)
-    scheduler = ReduceLROnPlateau(
-        optimizer, 
-        'min', 
-        factor   = args.factor, 
-        patience = args.patience, 
-        cooldown = args.cooldown, 
-        min_lr   = 1e-7
-    )    
-    train_evaluate(model, device, train_dataloader, test_dataloader, optimizer, scheduler, args.n_epochs_2, checkpoint+'_stage_2', losses, λ_loss)
+    
 
 if __name__ == '__main__':
     print('Parameters:')
