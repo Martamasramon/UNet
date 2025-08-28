@@ -30,14 +30,14 @@ def main():
         data_type   = 'train',
         img_size    = args.img_size, 
         is_finetune = args.finetune, 
-        use_mask    = args.use_mask
+        use_mask    = args.masked
     )
     test_dataset = MyDataset(
         folder + data_folder, 
         data_type   = 'train',
         img_size    = args.img_size, 
         is_finetune = args.finetune, 
-        use_mask    = args.use_mask
+        use_mask    = args.masked
     )
 
     train_dataloader  = DataLoader(train_dataset, batch_size=args.train_bs, shuffle=True,  num_workers=8)
@@ -54,7 +54,7 @@ def main():
         checkpoint = args.save_as if args.save_as is not None else get_checkpoint_name()
         optimizer, scheduler = get_scheduler(model, args)
         
-        train_evaluate(model, device, train_dataloader, test_dataloader, optimizer, scheduler, args.n_epochs_1, checkpoint+'_stage_1', losses, λ_loss)
+        train_evaluate(model, device, train_dataloader, test_dataloader, optimizer, scheduler, args.n_epochs, checkpoint+'_stage_1', losses, λ_loss)
     else:
         checkpoint = args.save_as if args.save_as is not None else args.checkpoint
 
@@ -66,7 +66,7 @@ def main():
     print('Loading best weights from stage 1...')
     model.load_state_dict(torch.load(f'{CHECKPOINTS_FOLDER}{checkpoint}_stage_1_best.pth'))
 
-    optimizer, scheduler = get_scheduler(model, args, lr=args.lr*args.lr_factor)  
+    optimizer, scheduler = get_scheduler(model, args, lr=args.lr_2)  
     train_evaluate(model, device, train_dataloader, test_dataloader, optimizer, scheduler, args.n_epochs_2, checkpoint+'_stage_2', losses, λ_loss)
 
 if __name__ == '__main__':

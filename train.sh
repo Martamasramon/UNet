@@ -7,7 +7,7 @@
 #$ -V
 
 #$ -wd /cluster/project7/ProsRegNet_CellCount/UNet
-#$ -N Train_T2W_UNet
+#$ -N Train_T2W
 
 date
 
@@ -21,6 +21,6 @@ source /cluster/project7/ProsRegNet_CellCount/CriDiff/CriDiff_env/bin/activate
 export PATH="/cluster/project7/ProsRegNet_CellCount/CriDiff/CriDiff_env/bin:$PATH"
 
 set -x
-python3 train.py --save_as='default_64'
+python3 train.py --masked ---save_as='masked_64'
 
 date

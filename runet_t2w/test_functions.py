@@ -21,7 +21,7 @@ def evaluate_results(model, dataloader, device):
         imgs = batch.to(device)
         
         with torch.no_grad():
-            pred = model(imgs)
+            pred, _ = model(imgs)
         
         for j in range(pred.size(0)):
             mse, psnr, ssim = compute_metrics(pred[j], imgs[j])
@@ -51,7 +51,7 @@ def visualize_results(model, dataset, device, name, batch_size=5, seed=1):
             img    = sample.unsqueeze(0).float().to(device)
                     
             # Use model to get prediction
-            img_recon = model(img)
+            img_recon, _ = model(img)
 
             im0 =axes[i,0].imshow(format_image(img),        cmap='gray',vmin=0,vmax=1)
             axes[i,0].axis('off')

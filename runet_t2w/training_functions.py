@@ -40,8 +40,8 @@ def train(model, device, optimizer, dataloader, losses, λ_loss):
     
     for data in dataloader:
         optimizer.zero_grad()
-        images = data.to(device)
-        output = model(images)
+        images    = data.to(device)
+        output, _ = model(images)
         
         # Calculate loss
         loss      = 0
@@ -74,8 +74,8 @@ def evaluate(model, device, dataloader, losses, λ_loss):
     with torch.no_grad():
         for data in dataloader:
             # Get images
-            images = data.to(device)
-            output = model(images)
+            images    = data.to(device)
+            output, _ = model(images)
 
             # Calculate loss
             loss      = 0

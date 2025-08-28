@@ -27,7 +27,7 @@ def main():
         data_type   = 'val',
         img_size    = args.img_size, 
         is_finetune = args.finetune, 
-        use_mask    = args.use_mask
+        use_mask    = args.masked
     )
 
     # Load model
@@ -37,7 +37,7 @@ def main():
 
     print(f"Visualising results...")
     save_name = args.checkpoint+'_HistoMRI' if args.finetune else args.checkpoint+'_PICAI' 
-    save_name = save_name+'_mask' if args.use_mask else save_name
+    save_name = save_name+'_mask' if args.masked else save_name
     visualize_results(model, dataset, device, save_name, batch_size=args.test_bs)
 
     print(f"Evaluating results...")
