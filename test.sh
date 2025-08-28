@@ -20,6 +20,16 @@ source CriDiff_env/bin/activate
 export PATH="CriDiff_env/bin:$PATH"
 cd ../UNet
 
-python3 test.py --checkpoint 'checkpoints_0306_1947_stage_1_best'
+python3 test.py --img_size 128 --checkpoint 'checkpoints_0206_1629_stage_1_best'
+python3 test.py --img_size 128 --checkpoint 'checkpoints_0206_1629_stage_2_best'
+python3 test.py --img_size 128 --checkpoint 'checkpoints_0406_1632_stage_1_best'
+python3 test.py --img_size 128 --checkpoint 'checkpoints_0406_1632_stage_2_best'
+python3 test.py --img_size 128 --checkpoint 'checkpoints_0606_1731_stage_1_best'
+python3 test.py --img_size 128 --checkpoint 'checkpoints_2905_1924_stage_1_best'
+python3 test.py --img_size 128 --checkpoint 'checkpoints_2905_2111_stage_1_best'
+python3 test.py --img_size 128 --checkpoint 'checkpoints_2905_2111_stage_2_best'
+python3 test.py --img_size 128 --checkpoint 'checkpoints_3005_0921_stage_1_best'
+python3 test.py --img_size 128 --checkpoint 'checkpoints_3005_1030_stage_1_best'
+python3 test.py --img_size 128 --checkpoint 'checkpoints_3005_1030_stage_2_best'
 
 date

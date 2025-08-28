@@ -176,16 +176,17 @@ class RUNet(nn.Module):
             x5    = self.block5(self.max_pool(x4))
             embed = self.representation_transform(x5)
             out4  = self.refine4(embed)
+            out3  = self.refine3(out4)
         else:
-            out4  = self.representation_transform(x4)        
+            embed  = self.representation_transform(x4)  
+            out3 = self.refine3(embed)      
         
-        out3 = self.refine3(out4)
         out2 = self.refine2(out3)
         out1 = self.refine1(out2)
 
         output = self.final(out1)
 
-        return output 
+        return output, embed
 
     def get_embedding(self, x):
         
@@ -197,7 +198,6 @@ class RUNet(nn.Module):
         if self.img_size == 128:
             x5    = self.block5(self.max_pool(x4))
             embed = self.representation_transform(x5)
-            out4  = self.refine4(embed)
         else:
             embed = self.representation_transform(x4)
 

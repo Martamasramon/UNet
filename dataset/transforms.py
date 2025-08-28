@@ -46,14 +46,29 @@ class RandomHorFlip(object):
 
 
 def get_train_transform(img_size=64):
-  return T.Compose([
-      CenterCrop(img_size),
-      RandomHorFlip(),
-      ToTensor(),
-  ])
+  if img_size==64:
+    return T.Compose([
+        CenterCrop(128),
+        Resize(64),
+        RandomHorFlip(),
+        ToTensor(),
+    ])
+  else:
+    return T.Compose([
+        CenterCrop(img_size),
+        RandomHorFlip(),
+        ToTensor(),
+    ])
 
 def get_test_transform(img_size=64):
-  return T.Compose([
-      CenterCrop(img_size),
-      ToTensor(),
-  ])
+  if img_size==64:
+    return T.Compose([
+        CenterCrop(128),
+        Resize(64),
+        ToTensor(),
+    ])
+  else:
+    return T.Compose([
+        CenterCrop(img_size),
+        ToTensor(),
+    ])
